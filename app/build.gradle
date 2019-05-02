@@ -1,0 +1,38 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+//        applicationId "com.kent.modulecaller"
+        minSdkVersion 22
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            zipAlignEnabled true
+            debuggable false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        debug {
+            minifyEnabled false
+            zipAlignEnabled false
+            debuggable true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    libraryVariants.all {
+        def buildType = it.buildType.name
+        it.outputs.each {
+//            it.getPackageApplication().outputDirectory = new File(project.rootDir.getAbsolutePath() + "/" + buildType)
+            def projectName = project.rootProject.name
+            def fileName = "${projectName}.aar"
+            it.outputFileName = fileName
+        }
+    }
+
+}
