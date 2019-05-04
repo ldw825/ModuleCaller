@@ -122,7 +122,7 @@ public class ModuleCaller {
                             for (int i = 0; i < types.length; i++) {
                                 Class<?> type = types[i];
                                 Class<?> param = paramTypes[i];
-                                if (!type.isAssignableFrom(param)) {
+                                if (param != null && !type.isAssignableFrom(param)) {
                                     throw new IllegalArgumentException("mismatch parameter for method " + methodName
                                             + ", required type=" + type.getName() + ", passed type=" + param.getName());
                                 }
@@ -150,6 +150,10 @@ public class ModuleCaller {
         } catch (SecurityException e) {
             e.printStackTrace();
             LogUtils.e("SecurityException for action:" + mTempCommand.getAction());
+            onCallFailed(mTempCommand.getAction(), e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            LogUtils.e("Exception for action:" + mTempCommand.getAction());
             onCallFailed(mTempCommand.getAction(), e.getMessage());
         } finally {
             mTempCommand = null;
@@ -201,7 +205,9 @@ public class ModuleCaller {
         if (target != null) {
             mExecutingList.remove(target);
             Callback callback = target.getCallback();
-            callback.onCallSuccess(action, result);
+            if (callback != null) {
+                callback.onCallSuccess(action, result);
+            }
         }
     }
 
@@ -217,7 +223,9 @@ public class ModuleCaller {
         if (target != null) {
             mExecutingList.remove(target);
             Callback callback = target.getCallback();
-            callback.onCallFailed(action, message);
+            if (callback != null) {
+                callback.onCallFailed(action, message);
+            }
         }
     }
 
