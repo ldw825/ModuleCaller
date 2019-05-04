@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import dalvik.system.BaseDexClassLoader;
 import dalvik.system.DexFile;
@@ -120,6 +121,19 @@ public class ModuleScanner {
             WeakReference<Class<?>> r = mModuleClassMap.get(action);
             if (r != null) {
                 return r.get();
+            }
+        }
+        return null;
+    }
+
+    public String getAction(Class<?> clazz) {
+        Set<Map.Entry<String, WeakReference<Class<?>>>> entrySet = mModuleClassMap.entrySet();
+        for (Map.Entry<String, WeakReference<Class<?>>> entry : entrySet) {
+            WeakReference<Class<?>> ref = entry.getValue();
+            if (ref != null) {
+                if (clazz == ref.get()) {
+                    return entry.getKey();
+                }
             }
         }
         return null;

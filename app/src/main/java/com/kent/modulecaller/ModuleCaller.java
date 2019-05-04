@@ -2,6 +2,7 @@ package com.kent.modulecaller;
 
 import android.content.Context;
 import android.os.Handler;
+import android.text.TextUtils;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
@@ -150,11 +151,11 @@ public class ModuleCaller {
         } catch (SecurityException e) {
             e.printStackTrace();
             LogUtils.e("SecurityException for action:" + mTempCommand.getAction());
-            onCallFailed(mTempCommand.getAction(), e.getMessage());
+            doCallFailed(mTempCommand.getAction(), e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             LogUtils.e("Exception for action:" + mTempCommand.getAction());
-            onCallFailed(mTempCommand.getAction(), e.getMessage());
+            doCallFailed(mTempCommand.getAction(), e.getMessage());
         } finally {
             mTempCommand = null;
         }
@@ -181,20 +182,28 @@ public class ModuleCaller {
         } catch (IllegalAccessException e) {
             e.printStackTrace();
             LogUtils.e("IllegalAccessException for action:" + command.getAction());
-            onCallFailed(command.getAction(), e.getMessage());
+            doCallFailed(command.getAction(), e.getMessage());
         } catch (InvocationTargetException e) {
             e.printStackTrace();
             LogUtils.e("InvocationTargetException for action:" + command.getAction());
-            onCallFailed(command.getAction(), e.getMessage());
+            doCallFailed(command.getAction(), e.getMessage());
         } catch (InstantiationException e) {
             e.printStackTrace();
             LogUtils.e("InstantiationException for action:" + command.getAction());
-            onCallFailed(command.getAction(), e.getMessage());
+            doCallFailed(command.getAction(), e.getMessage());
         }
     }
 
     // 异步调用，成功后回调
-    public synchronized void onCallSuccess(String action, Object result) {
+    public synchronized void onCallSuccess(Object result) {
+        String action = parseAction();
+        doCallSuccess(action, result);
+    }
+
+    private void doCallSuccess(String action, Object result) {
+        if (TextUtils.isEmpty(action)) {
+            return;
+        }
         Command target = null;
         for (Command command : mExecutingList) {
             if (command.getAction().equals(action)) {
@@ -212,7 +221,15 @@ public class ModuleCaller {
     }
 
     // 异步调用，失败后回调
-    public synchronized void onCallFailed(String action, String message) {
+    public synchronized void onCallFailed(String message) {
+        String action = parseAction();
+        doCallFailed(action, message);
+    }
+
+    private void doCallFailed(String action, String message) {
+        if (TextUtils.isEmpty(action)) {
+            return;
+        }
         Command target = null;
         for (Command command : mExecutingList) {
             if (command.getAction().equals(action)) {
@@ -227,6 +244,34 @@ public class ModuleCaller {
                 callback.onCallFailed(action, message);
             }
         }
+    }
+
+    // 解析调用onCallSuccess或onCallFailed的类的action
+    private String parseAction() {
+        StackTraceElement element = Thread.currentThread().getStackTrace()[4];
+        String fileName = element.getFileName();
+        fileName = fileName.substring(0, fileName.indexOf("."));
+        String topClassName = element.getClassName();
+        topClassName = topClassName.substring(0, topClassName.indexOf(fileName) + fileName.length());
+        LogUtils.d("topClassName=" + topClassName);
+        try {
+            Class<?> topClass = Class.forName(topClassName);
+            String action = SCANNER.getAction(topClass);
+            if (!TextUtils.isEmpty(action)) {
+                return action;
+            }
+            Class<?>[] classes = topClass.getDeclaredClasses();
+            for (int i = 0; i < classes.length; i++) {
+                Class<?> clazz = classes[i];
+                action = SCANNER.getAction(clazz);
+                if (!TextUtils.isEmpty(action)) {
+                    return action;
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public ModuleCaller action(String action) {
