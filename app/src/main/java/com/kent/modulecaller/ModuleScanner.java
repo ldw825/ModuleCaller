@@ -95,8 +95,11 @@ public class ModuleScanner {
                                 if (methodAnno != null) {
                                     LogUtils.d("module=" + moduleName + ", method=" + method.getName()
                                             + ", class=" + clazz.getName());
-                                    WeakReference<Class<?>> r = new WeakReference<Class<?>>(clazz);
-                                    mModuleClassMap.put(moduleName + "." + method.getName(), r);
+                                    String key = moduleName + "." + method.getName();
+                                    if (!mModuleClassMap.containsKey(key)) {
+                                        WeakReference<Class<?>> r = new WeakReference<Class<?>>(clazz);
+                                        mModuleClassMap.put(key, r);
+                                    }
                                 }
                             }
                         }
